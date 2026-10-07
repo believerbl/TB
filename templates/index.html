@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TB-Project | Confluence Engine Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: { 900: '#0f172a', 800: '#1e293b', 700: '#334155', 600: '#475569' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans p-6 min-h-screen selection:bg-blue-500 selection:text-white">
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 rounded-2xl glass shadow-2xl">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">⚡</span>
+                    <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 tracking-tight">
+                        TB-Project Terminal
+                    </h1>
+                </div>
+                <p class="text-slate-400 text-sm mt-1 ml-9">Algorithmic Confluence Engine & Autonomous Trade Verification</p>
+            </div>
+            <div class="flex items-center space-x-3 mt-4 sm:mt-0 bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/60">
+                <span class="flex h-3 w-3 relative">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span class="text-emerald-400 font-mono text-xs font-semibold tracking-wider">SYSTEM ACTIVE</span>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="glass p-6 rounded-2xl shadow-lg border border-slate-800/80 hover:border-blue-500/40 transition-all duration-300">
+                <div class="flex justify-between items-center text-slate-400 text-xs uppercase font-bold tracking-wider">
+                    <span>Win Rate</span>
+                    <span class="text-blue-400 text-lg">🎯</span>
+                </div>
+                <p class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 mt-3" id="kpi-winrate">0%</p>
+                <p class="text-slate-500 text-xs mt-1">Resolved Trades Accuracy</p>
+            </div>
+            <div class="glass p-6 rounded-2xl shadow-lg border border-slate-800/80 hover:border-emerald-500/40 transition-all duration-300">
+                <div class="flex justify-between items-center text-slate-400 text-xs uppercase font-bold tracking-wider">
+                    <span>Verified Wins</span>
+                    <span class="text-emerald-400 text-lg">✅</span>
+                </div>
+                <p class="text-4xl font-black text-emerald-400 mt-3" id="kpi-wins">0</p>
+                <p class="text-slate-500 text-xs mt-1">Confirmed Expiry Wins</p>
+            </div>
+            <div class="glass p-6 rounded-2xl shadow-lg border border-slate-800/80 hover:border-red-500/40 transition-all duration-300">
+                <div class="flex justify-between items-center text-slate-400 text-xs uppercase font-bold tracking-wider">
+                    <span>Verified Losses</span>
+                    <span class="text-red-400 text-lg">❌</span>
+                </div>
+                <p class="text-4xl font-black text-red-400 mt-3" id="kpi-losses">0</p>
+                <p class="text-slate-500 text-xs mt-1">Expired Negative Outcomes</p>
+            </div>
+            <div class="glass p-6 rounded-2xl shadow-lg border border-slate-800/80 hover:border-amber-500/40 transition-all duration-300">
+                <div class="flex justify-between items-center text-slate-400 text-xs uppercase font-bold tracking-wider">
+                    <span>Pending Resolution</span>
+                    <span class="text-amber-400 text-lg">⏳</span>
+                </div>
+                <p class="text-4xl font-black text-amber-400 mt-3" id="kpi-pending">0</p>
+                <p class="text-slate-500 text-xs mt-1">In 5-Minute Window</p>
+            </div>
+        </div>
+
+        <!-- Chart and Table Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Win/Loss Doughnut Chart -->
+            <div class="glass p-6 rounded-2xl shadow-xl col-span-1 flex flex-col items-center justify-between">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <h3 class="text-slate-200 font-bold text-sm uppercase tracking-wider">Outcome Distribution</h3>
+                    <span class="text-xs text-slate-400 font-mono" id="total-trades-label">0 Trades</span>
+                </div>
+                <div class="w-full max-w-[240px] my-auto py-2">
+                    <canvas id="outcomeChart"></canvas>
+                </div>
+                <div class="w-full grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800 text-center text-xs">
+                    <div><span class="text-emerald-400 font-bold block" id="legend-wins">0</span>Wins</div>
+                    <div><span class="text-red-400 font-bold block" id="legend-losses">0</span>Losses</div>
+                    <div><span class="text-slate-400 font-bold block" id="legend-ties">0</span>Ties</div>
+                </div>
+            </div>
+
+            <!-- Recent Signals Table -->
+            <div class="glass p-6 rounded-2xl shadow-xl col-span-2 overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-slate-200 font-bold text-sm uppercase tracking-wider">Execution Log (Recent Signals)</h3>
+                    <span class="text-xs text-slate-400 font-mono">Auto-refreshes every 5s</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700/80 text-slate-400 text-xs uppercase font-semibold">
+                                <th class="pb-3 px-3">Time</th>
+                                <th class="pb-3 px-3">Pair</th>
+                                <th class="pb-3 px-3">Type</th>
+                                <th class="pb-3 px-3">Entry ($P_0$)</th>
+                                <th class="pb-3 px-3">Exit ($P_1$)</th>
+                                <th class="pb-3 px-3">Score</th>
+                                <th class="pb-3 px-3">Outcome</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="text-xs divide-y divide-slate-800/60 font-mono">
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
+                                    Awaiting live trades. Start <code class="bg-slate-800 px-2 py-1 rounded text-blue-400">python run_bot.py</code> to feed signals.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-slate-500 pt-4">
+            Maharana Pratap Group of Institutions • B.Tech Mini-Project • TB Confluence Engine v2.0
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Chart.js
+        const ctx = document.getElementById('outcomeChart').getContext('2d');
+        const outcomeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Wins', 'Losses', 'Ties'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#10b981', '#ef4444', '#64748b'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Polling logic
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                const wins = data.stats.wins || 0;
+                const losses = data.stats.losses || 0;
+                const ties = data.stats.ties || 0;
+                const pending = data.stats.pending || 0;
+                const total = wins + losses + ties;
+
+                // Update KPIs
+                document.getElementById('kpi-winrate').innerText = data.win_rate + '%';
+                document.getElementById('kpi-wins').innerText = wins;
+                document.getElementById('kpi-losses').innerText = losses;
+                document.getElementById('kpi-pending').innerText = pending;
+                document.getElementById('total-trades-label').innerText = `${total} Resolved`;
+                document.getElementById('legend-wins').innerText = wins;
+                document.getElementById('legend-losses').innerText = losses;
+                document.getElementById('legend-ties').innerText = ties;
+
+                // Update Chart
+                if (total === 0) {
+                    outcomeChart.data.datasets[0].data = [0, 0, 1]; // neutral empty ring
+                    outcomeChart.data.datasets[0].backgroundColor = ['#10b981', '#ef4444', '#334155'];
+                } else {
+                    outcomeChart.data.datasets[0].data = [wins, losses, ties];
+                    outcomeChart.data.datasets[0].backgroundColor = ['#10b981', '#ef4444', '#64748b'];
+                }
+                outcomeChart.update();
+
+                // Update Table
+                const tbody = document.getElementById('table-body');
+                if (data.recent && data.recent.length > 0) {
+                    tbody.innerHTML = '';
+                    data.recent.forEach(row => {
+                        let statusBadge = '<span class="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">PENDING</span>';
+                        if (row.outcome === 'WIN') {
+                            statusBadge = '<span class="bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">WIN</span>';
+                        } else if (row.outcome === 'LOSS') {
+                            statusBadge = '<span class="bg-red-500/15 text-red-400 font-bold px-2 py-0.5 rounded border border-red-500/30">LOSS</span>';
+                        } else if (row.outcome === 'TIE') {
+                            statusBadge = '<span class="bg-slate-500/15 text-slate-400 font-bold px-2 py-0.5 rounded border border-slate-500/30">TIE</span>';
+                        }
+                        
+                        let typeBadge = row.signal_type === 'CALL' 
+                            ? '<span class="text-emerald-400 font-bold">▲ CALL</span>' 
+                            : '<span class="text-red-400 font-bold">▼ PUT</span>';
+
+                        let time = row.timestamp ? new Date(row.timestamp).toLocaleTimeString() : '-';
+                        let entry = row.entry_price ? Number(row.entry_price).toFixed(5) : '-';
+                        let exit = row.exit_price ? Number(row.exit_price).toFixed(5) : '-';
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3 px-3 text-slate-400 font-sans">${time}</td>
+                                <td class="py-3 px-3 font-semibold text-slate-200">${row.symbol}</td>
+                                <td class="py-3 px-3">${typeBadge}</td>
+                                <td class="py-3 px-3 text-slate-300">${entry}</td>
+                                <td class="py-3 px-3 text-slate-300">${exit}</td>
+                                <td class="py-3 px-3"><span class="text-blue-400 font-semibold">${row.confidence_score}%</span></td>
+                                <td class="py-3 px-3">${statusBadge}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to fetch metrics', err);
+            }
+        }
+
+        // Fetch immediately, then every 5 seconds
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>

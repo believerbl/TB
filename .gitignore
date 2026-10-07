@@ -44,8 +44,11 @@ info.txt
 # Log and temporary files
 *.log
 debug.log
+bot_activity.log
+*.db
+signals.db
 tempCodeRunnerFile.py
-TB~
+TB
 
 # Binary and Archive files
 *.zip
