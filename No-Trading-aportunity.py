@@ -7,7 +7,10 @@ from telegram import Bot
 from telegram.error import TelegramError
 import time
 import pandas as pd
-import pandas_ta as ta
+try:
+    import pandas_ta_classic as ta
+except ImportError:
+    import pandas_ta as ta
 
 # Load environment variables
 load_dotenv(".env")

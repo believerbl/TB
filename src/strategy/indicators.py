@@ -5,7 +5,10 @@ import pandas as pd
 if not hasattr(np, "NaN"):
     np.NaN = np.nan
 
-import pandas_ta as ta
+try:
+    import pandas_ta_classic as ta
+except ImportError:
+    import pandas_ta as ta
 
 class IndicatorEngine:
     """Applies multi-factor technical indicators for the Confluence Strategy."""
