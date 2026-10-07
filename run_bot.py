@@ -30,8 +30,8 @@ async def market_scanner(data_feed, tracker, notifier, watchlist):
     while True:
         for symbol in watchlist:
             try:
-                # 1. Fetch Market Data
-                df = await data_feed.fetch_candles(symbol, interval=settings.TIMEFRAME, n_bars=100)
+                # 1. Fetch Market Data (250 bars ensures EMA 200 has full history)
+                df = await data_feed.fetch_candles(symbol, interval=settings.TIMEFRAME, n_bars=max(settings.HISTORY_LENGTH, 250))
                 if df.empty:
                     continue
                     

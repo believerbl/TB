@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from src.config import settings
@@ -60,9 +60,13 @@ def get_db_stats():
             "recent": [], "win_rate": 0
         }
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def serve_dashboard(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
+
+@app.get("/favicon.ico")
+async def favicon():
+    return Response(status_code=204)
 
 @app.get("/api/data")
 async def api_data():

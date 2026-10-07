@@ -19,8 +19,11 @@ class IndicatorEngine:
         df = df.copy()
         
         # 1. Trend Filter: Exponential Moving Averages
-        df['ema_50'] = ta.ema(df['close'], length=50)
-        df['ema_200'] = ta.ema(df['close'], length=200)
+        df['ema_50'] = ta.ema(df['close'], length=50) if len(df) >= 50 else df['close']
+        if len(df) >= 200:
+            df['ema_200'] = ta.ema(df['close'], length=200)
+        else:
+            df['ema_200'] = df['ema_50']
         
         # 2. Momentum: RSI (14)
         df['rsi_14'] = ta.rsi(df['close'], length=14)
