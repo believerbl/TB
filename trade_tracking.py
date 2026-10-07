@@ -7,6 +7,7 @@ from telegram import Bot, error
 import time
 
 # Load environment variables
+load_dotenv(".env")
 load_dotenv("ini.env")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
