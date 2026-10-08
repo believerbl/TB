@@ -61,3 +61,6 @@ TB
 *.sublime-project
 *.sublime-workspace
 .DS_Store
+
+# others
+Others/
