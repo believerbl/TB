@@ -14,7 +14,7 @@ class Config:
     CHAT_ID: str = os.getenv("CHAT_ID", "")
     DB_PATH: str = os.getenv("DB_PATH", "signals.db")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")   # Neon.tech PostgreSQL URL
-    CONFIDENCE_THRESHOLD: int = int(os.getenv("CONFIDENCE_THRESHOLD", 75))
+    CONFIDENCE_THRESHOLD: int = int(os.getenv("CONFIDENCE_THRESHOLD", 50))
     DEMO_MODE: bool = os.getenv("DEMO_MODE", "False").lower() in ("true", "1", "yes")
     TRADING_PAIRS: List[str] = field(default_factory=lambda: [
         p.strip() for p in os.getenv("TRADING_PAIRS", "EUR/USD,EUR/JPY,GBP/USD").split(",") if p.strip()
