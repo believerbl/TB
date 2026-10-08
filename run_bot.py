@@ -84,9 +84,9 @@ async def main():
         data_feed = ReplayFeed('data/historical/eurusd_sample.csv')
         watchlist = ['EUR/USD']
     else:
-        logger.info("Initializing LIVE Mode (Twelve Data API).")
+        logger.info("Initializing LIVE Mode (Twelve Data API with Yahoo Finance Failover).")
         data_feed = TwelveDataFeed()
-        watchlist = ['EUR/USD', 'EUR/JPY', 'GBP/USD']
+        watchlist = settings.TRADING_PAIRS
         
     tracker = TradeOutcomeEvaluator(data_feed)
     notifier = TelegramNotifier(data_feed, tracker)
