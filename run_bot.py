@@ -28,42 +28,54 @@ async def market_scanner(data_feed, tracker, notifier, watchlist):
     logger.info(f"Market scanner started. Monitoring: {watchlist}")
     
     while True:
-        for symbol in watchlist:
-            try:
-                # 1. Fetch Market Data (250 bars ensures EMA 200 has full history)
-                df = await data_feed.fetch_candles(symbol, interval=settings.TIMEFRAME, n_bars=max(settings.HISTORY_LENGTH, 250))
-                if df.empty:
+        try:
+            # 1. Fetch Market Data for ALL watchlist symbols in a SINGLE batch call (cuts API round-trips by 1/N)
+            batch_data = await data_feed.fetch_batch_candles(
+                symbols=watchlist,
+                interval=settings.TIMEFRAME,
+                n_bars=max(settings.HISTORY_LENGTH, 250)
+            )
+
+            for symbol, df in batch_data.items():
+                if df is None or df.empty:
                     continue
-                    
-                # 2. Enrich with Confluence Indicators
-                enriched = IndicatorEngine.build_indicators(df)
-                latest_row = enriched.iloc[-1]
-                current_time = latest_row['datetime']
-                
-                # 3. Analyze for Signals
-                signal = ConfluenceScorer.analyze(latest_row)
-                
-                # 4. Execute Signal (Prevent duplicate alerts on the same candle)
-                if signal['signal_type'] != 'NEUTRAL' and last_signal_time[symbol] != current_time:
-                    logger.info(f"🔥 {signal['signal_type']} Signal on {symbol} at {signal['price']} (Confidence: {signal['confidence']}%)")
-                    
-                    # Log to database as PENDING
-                    tracker.log_signal(symbol, signal['signal_type'], signal['price'], signal['confidence'])
-                    
-                    # Dispatch to Telegram
-                    await notifier.broadcast_signal(signal, symbol)
-                    
-                    # Update cache to prevent spam
-                    last_signal_time[symbol] = current_time
-                    
-            except Exception as e:
-                logger.error(f"Error scanning {symbol}: {e}")
+
+                try:
+                    # 2. Enrich with Confluence Indicators
+                    enriched = IndicatorEngine.build_indicators(df)
+                    latest_row = enriched.iloc[-1]
+                    current_time = latest_row['datetime']
+
+                    # 3. Analyze for Signals
+                    signal = ConfluenceScorer.analyze(latest_row)
+
+                    # 4. Execute Signal (Prevent duplicate alerts on the same candle)
+                    if signal['signal_type'] != 'NEUTRAL' and last_signal_time.get(symbol) != current_time:
+                        logger.info(f"🔥 {signal['signal_type']} Signal on {symbol} at {signal['price']} (Confidence: {signal['confidence']}%)")
+
+                        # Log to database as PENDING
+                        tracker.log_signal(symbol, signal['signal_type'], signal['price'], signal['confidence'])
+
+                        # Dispatch to Telegram
+                        await notifier.broadcast_signal(signal, symbol)
+
+                        # Update cache to prevent spam
+                        last_signal_time[symbol] = current_time
+
+                except Exception as e:
+                    logger.error(f"Error analyzing {symbol}: {e}")
+
+        except Exception as e:
+            logger.error(f"Error in batch market scan: {e}")
 
         # 5. Evaluate expired pending trades from previous cycles
-        await tracker.evaluate_pending_trades()
-        
-        # 6. Sleep before next cycle (10 seconds for demo pacing, 60 for live)
-        sleep_time = 10 if settings.DEMO_MODE else 60
+        try:
+            await tracker.evaluate_pending_trades()
+        except Exception as e:
+            logger.error(f"Error evaluating pending trades: {e}")
+
+        # 6. Sleep before next cycle (10 seconds for demo pacing, settings.UPDATE_INTERVAL for live)
+        sleep_time = 10 if settings.DEMO_MODE else settings.UPDATE_INTERVAL
         await asyncio.sleep(sleep_time)
 
 
@@ -84,7 +96,7 @@ async def main():
         data_feed = ReplayFeed('data/historical/eurusd_sample.csv')
         watchlist = ['EUR/USD']
     else:
-        logger.info("Initializing LIVE Mode (Twelve Data API with Yahoo Finance Failover).")
+        logger.info("Initializing LIVE Mode (Twelve Data Batch API).")
         data_feed = TwelveDataFeed()
         watchlist = settings.TRADING_PAIRS
         

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List, Dict
 import pandas as pd
 
 class MarketDataFeed(ABC):
@@ -6,7 +7,12 @@ class MarketDataFeed(ABC):
     
     @abstractmethod
     async def fetch_candles(self, symbol: str, interval: str, n_bars: int) -> pd.DataFrame:
-        """Fetches historical OHLCV candle data as a sorted pandas DataFrame."""
+        """Fetches historical OHLCV candle data for a single symbol."""
+        pass
+
+    @abstractmethod
+    async def fetch_batch_candles(self, symbols: List[str], interval: str, n_bars: int) -> Dict[str, pd.DataFrame]:
+        """Fetches historical OHLCV candle data for multiple symbols in a single batch request."""
         pass
 
     @abstractmethod

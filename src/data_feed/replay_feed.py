@@ -30,5 +30,9 @@ class ReplayFeed(MarketDataFeed):
             
         return chunk
 
+    async def fetch_batch_candles(self, symbols: list, interval: str = "5min", n_bars: int = 100) -> dict:
+        chunk = await self.fetch_candles(symbols[0] if symbols else "EUR/USD", interval=interval, n_bars=n_bars)
+        return {sym: chunk for sym in symbols}
+
     async def get_latest_price(self, symbol: str) -> float:
         return float(self.df.iloc[self.current_index]['close'])

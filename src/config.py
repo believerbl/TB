@@ -21,7 +21,7 @@ class Config:
     ])
     TIMEFRAME: str = os.getenv("TIMEFRAME", "5min")
     HISTORY_LENGTH: int = int(os.getenv("HISTORY_LENGTH", 100))
-    UPDATE_INTERVAL: int = int(os.getenv("UPDATE_INTERVAL", 60))
+    UPDATE_INTERVAL: int = int(os.getenv("UPDATE_INTERVAL", 120))
 
     @property
     def USE_POSTGRES(self) -> bool:
