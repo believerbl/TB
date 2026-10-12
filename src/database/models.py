@@ -68,7 +68,8 @@ def log_signal(
     entry_price: float,
     confidence_score: int
 ) -> int:
-    """Inserts a new PENDING signal and returns its row ID."""
+    entry_price = float(entry_price)
+    confidence_score = int(confidence_score)
     if settings.USE_POSTGRES:
         conn = _get_pg_conn()
         cursor = conn.cursor()

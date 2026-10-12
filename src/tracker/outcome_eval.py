@@ -41,6 +41,8 @@ class TradeOutcomeEvaluator:
         conn = _get_conn(self.db_path, self.use_pg)
         cursor = conn.cursor()
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        entry_price = float(entry_price)
+        confidence = int(confidence)
         if self.use_pg:
             cursor.execute(
                 f'''INSERT INTO trade_signals (timestamp, symbol, signal_type, entry_price, confidence_score, outcome)

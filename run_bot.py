@@ -22,24 +22,30 @@ logging.basicConfig(
 logger = logging.getLogger("MainRunner")
 
 async def market_scanner(data_feed, tracker, notifier, watchlist):
-    """Continuous async loop that scans assets, triggers signals, and evaluates outcomes."""
+    """Continuous async loop that scans assets round-robin (1 symbol per cycle with 60s gap)."""
     last_signal_time = {symbol: None for symbol in watchlist}
+    current_idx = 0
     
-    logger.info(f"Market scanner started. Monitoring: {watchlist}")
+    logger.info(f"Market scanner started (Round-Robin mode). Monitoring: {watchlist}")
     
     while True:
+        if not watchlist:
+            await asyncio.sleep(10)
+            continue
+
+        symbol = watchlist[current_idx % len(watchlist)]
+        current_idx = (current_idx + 1) % len(watchlist)
+
         try:
-            # 1. Fetch Market Data for ALL watchlist symbols in a SINGLE batch call (cuts API round-trips by 1/N)
-            batch_data = await data_feed.fetch_batch_candles(
-                symbols=watchlist,
+            logger.info(f"Scanning symbol: {symbol}")
+            # 1. Fetch Market Data for a single symbol (1 API credit per call)
+            df = await data_feed.fetch_candles(
+                symbol=symbol,
                 interval=settings.TIMEFRAME,
                 n_bars=max(settings.HISTORY_LENGTH, 250)
             )
 
-            for symbol, df in batch_data.items():
-                if df is None or df.empty:
-                    continue
-
+            if df is not None and not df.empty:
                 try:
                     # 2. Enrich with Confluence Indicators
                     enriched = IndicatorEngine.build_indicators(df)
@@ -66,7 +72,7 @@ async def market_scanner(data_feed, tracker, notifier, watchlist):
                     logger.error(f"Error analyzing {symbol}: {e}")
 
         except Exception as e:
-            logger.error(f"Error in batch market scan: {e}")
+            logger.error(f"Error fetching candles for {symbol}: {e}")
 
         # 5. Evaluate expired pending trades from previous cycles
         try:
