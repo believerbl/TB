@@ -51,11 +51,19 @@ async def market_scanner(data_feed, tracker, notifier, watchlist):
                     enriched = IndicatorEngine.build_indicators(df)
                     latest_row = enriched.iloc[-1]
                     current_time = latest_row['datetime']
+                    current_price = float(latest_row['close'])
 
-                    # 3. Analyze for Signals
+                    # 3. Symbol-Synchronized Outcome Evaluation:
+                    # Resolve expired pending trades for THIS symbol using the fresh candle close (0 API credits!)
+                    try:
+                        await tracker.evaluate_pending_trades(symbol=symbol, current_price=current_price)
+                    except Exception as e:
+                        logger.error(f"Error evaluating pending trades for {symbol}: {e}")
+
+                    # 4. Analyze for Signals
                     signal = ConfluenceScorer.analyze(latest_row)
 
-                    # 4. Execute Signal (Prevent duplicate alerts on the same candle)
+                    # 5. Execute Signal (Prevent duplicate alerts on the same candle)
                     if signal['signal_type'] != 'NEUTRAL' and last_signal_time.get(symbol) != current_time:
                         logger.info(f"🔥 {signal['signal_type']} Signal on {symbol} at {signal['price']} (Confidence: {signal['confidence']}%)")
 
@@ -73,12 +81,6 @@ async def market_scanner(data_feed, tracker, notifier, watchlist):
 
         except Exception as e:
             logger.error(f"Error fetching candles for {symbol}: {e}")
-
-        # 5. Evaluate expired pending trades from previous cycles
-        try:
-            await tracker.evaluate_pending_trades()
-        except Exception as e:
-            logger.error(f"Error evaluating pending trades: {e}")
 
         # 6. Sleep before next cycle (10 seconds for demo pacing, settings.UPDATE_INTERVAL for live)
         sleep_time = 10 if settings.DEMO_MODE else settings.UPDATE_INTERVAL

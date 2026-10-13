@@ -60,24 +60,43 @@ class TradeOutcomeEvaluator:
         conn.commit(); cursor.close(); conn.close()
         return row_id
 
-    async def evaluate_pending_trades(self) -> int:
-        """Resolves expired PENDING trades. Returns number of trades resolved."""
+    async def evaluate_pending_trades(
+        self,
+        symbol: Optional[str] = None,
+        current_price: Optional[float] = None
+    ) -> int:
+        """
+        Resolves expired PENDING trades.
+        If symbol and current_price are provided, resolves pending trades for THAT
+        specific symbol directly using the freshly scanned price (0 API calls!).
+        """
         resolved_count = 0
         ph = _ph(self.use_pg)
         expiry_threshold = datetime.now() - timedelta(minutes=self.expiry_minutes)
         conn = _get_conn(self.db_path, self.use_pg)
         cursor = conn.cursor()
 
-        cursor.execute(
-            f'''SELECT id, symbol, signal_type, entry_price FROM trade_signals
-                WHERE outcome = 'PENDING' AND timestamp <= {ph}''',
-            (expiry_threshold.strftime('%Y-%m-%d %H:%M:%S'),)
-        )
+        if symbol:
+            cursor.execute(
+                f'''SELECT id, symbol, signal_type, entry_price FROM trade_signals
+                    WHERE outcome = 'PENDING' AND symbol = {ph} AND timestamp <= {ph}''',
+                (symbol, expiry_threshold.strftime('%Y-%m-%d %H:%M:%S'))
+            )
+        else:
+            cursor.execute(
+                f'''SELECT id, symbol, signal_type, entry_price FROM trade_signals
+                    WHERE outcome = 'PENDING' AND timestamp <= {ph}''',
+                (expiry_threshold.strftime('%Y-%m-%d %H:%M:%S'),)
+            )
         pending = cursor.fetchall()
 
-        for trade_id, symbol, signal_type, entry_price in pending:
+        for trade_id, sym, signal_type, entry_price in pending:
             try:
-                exit_price = await self.data_feed.get_latest_price(symbol)
+                if current_price is not None and sym == symbol:
+                    exit_price = current_price
+                else:
+                    exit_price = await self.data_feed.get_latest_price(sym)
+
                 if exit_price == entry_price:
                     outcome = 'TIE'
                 elif (signal_type == 'CALL' and exit_price > entry_price) or \
@@ -91,7 +110,7 @@ class TradeOutcomeEvaluator:
                     (exit_price, outcome, trade_id)
                 )
                 resolved_count += 1
-                logger.info(f"Resolved #{trade_id} ({symbol} {signal_type}): {outcome} (Entry:{entry_price} Exit:{exit_price})")
+                logger.info(f"Resolved #{trade_id} ({sym} {signal_type}): {outcome} (Entry:{entry_price} Exit:{exit_price})")
             except Exception as e:
                 logger.error(f"Failed to evaluate trade #{trade_id}: {e}")
 

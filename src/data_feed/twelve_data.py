@@ -17,6 +17,7 @@ class TwelveDataFeed(MarketDataFeed):
         self.base_url = "https://api.twelvedata.com"
         self.last_call_time = 0.0
         self.rate_limit_delay = 8.0  # Ensures max 7.5 requests per minute
+        self.price_cache: Dict[str, float] = {}
 
     async def _rate_limit(self):
         now = time.time()
@@ -55,7 +56,10 @@ class TwelveDataFeed(MarketDataFeed):
                 if "values" not in data:
                     raise ValueError(f"API Error or Rate Limit hit: {data}")
 
-                return self._parse_values_to_df(data["values"])
+                df = self._parse_values_to_df(data["values"])
+                if not df.empty:
+                    self.price_cache[symbol] = float(df['close'].iloc[-1])
+                return df
 
     async def fetch_batch_candles(self, symbols: List[str], interval: str = "5min", n_bars: int = 250) -> Dict[str, pd.DataFrame]:
         """
@@ -98,10 +102,17 @@ class TwelveDataFeed(MarketDataFeed):
                         logger.warning(f"No candle values returned for {sym}: {sym_data}")
                         result[sym] = pd.DataFrame()
 
+                for sym, sym_df in result.items():
+                    if not sym_df.empty:
+                        self.price_cache[sym] = float(sym_df['close'].iloc[-1])
+
                 return result
 
     async def get_latest_price(self, symbol: str) -> float:
-        """Fetches real-time price for a single symbol."""
+        """Fetches real-time price, using in-memory cache first to avoid burning credits."""
+        if symbol in self.price_cache:
+            return self.price_cache[symbol]
+
         await self._rate_limit()
         url = f"{self.base_url}/price"
         params = {"symbol": symbol, "apikey": self.api_key}
@@ -111,4 +122,6 @@ class TwelveDataFeed(MarketDataFeed):
                 data = await response.json()
                 if "price" not in data:
                     raise ValueError(f"Failed to fetch price for {symbol}: {data}")
-                return float(data['price'])
+                price = float(data['price'])
+                self.price_cache[symbol] = price
+                return price
